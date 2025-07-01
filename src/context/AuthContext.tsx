@@ -1,10 +1,5 @@
 import type { User } from "firebase/auth";
-import {
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  signInWithPopup,
-  signOut,
-} from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import type { ReactNode } from "react";
 import React, { createContext, useEffect, useState } from "react";
 import { auth, getGoogleDriveProvider } from "../firebase/config";
@@ -32,8 +27,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
-  console.log(accessToken);
-  
+  // On mount, always start logged out (require explicit login)
+  useEffect(() => {
+    setUser(null);
+    setAccessToken(null);
+    setLoading(false);
+  }, []);
 
   const signInWithGoogleDrive = async () => {
     const provider = getGoogleDriveProvider();
@@ -48,15 +47,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setAccessToken(null);
     setUser(null);
   };
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-      setAccessToken(null);
-    });
-    return () => unsubscribe();
-  }, []);
 
   return (
     <AuthContext.Provider
