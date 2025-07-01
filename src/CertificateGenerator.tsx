@@ -11,6 +11,7 @@ import PreviewSection from "./components/PreviewSection";
 import StatusSection from "./components/StatusSection";
 import UploadResults from "./components/UploadResults";
 import UploadSection from "./components/UploadSection";
+import { useAuth } from "./hooks/useAuth";
 
 // Type Definitions
 interface Delegate {
@@ -55,6 +56,40 @@ interface UploadResult {
   error?: string;
 }
 
+// Add helper to get or create a folder in Google Drive
+async function getOrCreateDriveFolder(
+  token: string,
+  folderName: string
+): Promise<string> {
+  // 1. Search for the folder
+  const searchRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(
+      folderName
+    )}'+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  const searchData = await searchRes.json();
+  if (searchData.files && searchData.files.length > 0) {
+    return searchData.files[0].id;
+  }
+  // 2. Create the folder if not found
+  const createRes = await fetch("https://www.googleapis.com/drive/v3/files", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: folderName,
+      mimeType: "application/vnd.google-apps.folder",
+    }),
+  });
+  const createData = await createRes.json();
+  return createData.id;
+}
+
 const CertificateGenerator: React.FC = () => {
   const [delegates, setDelegates] = useState<Delegate[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -85,6 +120,7 @@ const CertificateGenerator: React.FC = () => {
     generatePublicLinks: true,
   });
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { accessToken } = useAuth();
 
   // Sample delegate data
   const sampleDelegates: Delegate[] = [
@@ -234,28 +270,70 @@ const CertificateGenerator: React.FC = () => {
     });
   };
 
-  const uploadToFirebase = async (
+  const uploadToDrive = async (
     certificateData: CertificateData
   ): Promise<UploadResult> => {
-    try {
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1000 + Math.random() * 1000)
-      );
+    if (!accessToken) {
       return {
-        success: true,
-        url: `https://firebasestorage.googleapis.com/v0/b/your-project.appspot.com/o/${
-          firebaseConfig.folderPath
-        }%2F${encodeURIComponent(
-          certificateData.delegate.certificateName
-        )}-certificate.png?alt=media`,
+        success: false,
+        error: "Not authenticated with Google Drive",
         filename: certificateData.filename,
         delegate: certificateData.delegate,
-        uploadedAt: new Date().toISOString(),
       };
+    }
+    try {
+      // Convert dataURL to Blob
+      const res = await fetch(certificateData.dataURL);
+      const blob = await res.blob();
+      // Get or create the folder in Drive
+      const folderName = firebaseConfig.folderPath || "certificates";
+      const folderId = await getOrCreateDriveFolder(accessToken, folderName);
+      // Prepare metadata
+      const metadata = {
+        name: certificateData.filename,
+        mimeType: "image/png",
+        parents: [folderId],
+      };
+      // Prepare multipart form data
+      const formData = new FormData();
+      formData.append(
+        "metadata",
+        new Blob([JSON.stringify(metadata)], { type: "application/json" })
+      );
+      formData.append("file", blob);
+      // Upload to Google Drive
+      const response = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: formData,
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        return {
+          success: true,
+          url: `https://drive.google.com/file/d/${result.id}/view`,
+          filename: certificateData.filename,
+          delegate: certificateData.delegate,
+          uploadedAt: new Date().toISOString(),
+        };
+      } else {
+        const error = await response.text();
+        return {
+          success: false,
+          error,
+          filename: certificateData.filename,
+          delegate: certificateData.delegate,
+        };
+      }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : String(error),
         filename: certificateData.filename,
         delegate: certificateData.delegate,
       };
@@ -278,7 +356,7 @@ const CertificateGenerator: React.FC = () => {
 
       try {
         const certificateData = await generateSingleCertificate(delegates[i]);
-        const uploadResult = await uploadToFirebase(certificateData);
+        const uploadResult = await uploadToDrive(certificateData);
         if (uploadResult.success) uploaded.push(uploadResult);
         await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error) {
