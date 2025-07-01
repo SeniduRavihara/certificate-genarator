@@ -1,14 +1,9 @@
 // CertificateGenerator.tsx
-// NOTE: Requires Firebase config and Tailwind CSS for full functionality.
-
-import { Cloud, ExternalLink, Pause, Settings } from "lucide-react";
+// Modern Dark Theme with Enhanced UI
+import { Cloud, ExternalLink, Pause, Settings, Upload, FileText, Sparkles, Zap, Check, ArrowRight } from "lucide-react";
 import type { ChangeEvent } from "react";
 import React, { useRef, useState } from "react";
 import * as XLSX from "xlsx";
-
-// import { db, storage } from "@/firebase/config";
-// import { collection, getDocs, query, updateDoc, where } from "firebase/firestore";
-// import { getDownloadURL, ref, StorageReference, uploadString } from "firebase/storage";
 
 // Type Definitions
 interface Delegate {
@@ -57,33 +52,27 @@ const CertificateGenerator: React.FC = () => {
   const [delegates, setDelegates] = useState<Delegate[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [uploadedCertificates, setUploadedCertificates] = useState<
-    UploadResult[]
-  >([]);
+  const [uploadedCertificates, setUploadedCertificates] = useState<UploadResult[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [certificateConfig, setCertificateConfig] = useState<CertificateConfig>(
-    {
-      width: 1200,
-      height: 800,
-      nameX: 650, // This will be the center X position
-      nameY: 490,
-      fontSize: 48,
-      fontFamily: "serif",
-      textColor: "#000000",
-      textAlign: "center", // Always center-align the text
-      eventName: "Road To Legacy 2.0",
-      eventDate: "May 31, 2025",
-    }
-  );
-  const [backgroundImage, setBackgroundImage] =
-    useState<HTMLImageElement | null>(null);
+  const [certificateConfig, setCertificateConfig] = useState<CertificateConfig>({
+    width: 1200,
+    height: 800,
+    nameX: 650,
+    nameY: 490,
+    fontSize: 48,
+    fontFamily: "serif",
+    textColor: "#000000",
+    textAlign: "center",
+    eventName: "Road To Legacy 2.0",
+    eventDate: "May 31, 2025",
+  });
+  const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
   const [firebaseConfig, setFirebaseConfig] = useState<FirebaseConfig>({
     enabled: true,
     folderPath: "certificates",
     generatePublicLinks: true,
   });
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  //   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sample delegate data
   const sampleDelegates: Delegate[] = [
@@ -110,9 +99,7 @@ const CertificateGenerator: React.FC = () => {
     },
   ];
 
-  const handleBackgroundUpload = (
-    event: ChangeEvent<HTMLInputElement>
-  ): void => {
+  const handleBackgroundUpload = (event: ChangeEvent<HTMLInputElement>): void => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -122,7 +109,6 @@ const CertificateGenerator: React.FC = () => {
           const img = new Image();
           img.onload = () => {
             setBackgroundImage(img);
-            // Update canvas size to match image
             setCertificateConfig((prev) => ({
               ...prev,
               width: img.width,
@@ -136,9 +122,7 @@ const CertificateGenerator: React.FC = () => {
     }
   };
 
-  const handleDelegatesUpload = (
-    event: ChangeEvent<HTMLInputElement>
-  ): void => {
+  const handleDelegatesUpload = (event: ChangeEvent<HTMLInputElement>): void => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -148,175 +132,80 @@ const CertificateGenerator: React.FC = () => {
           if (result instanceof ArrayBuffer) {
             const data = new Uint8Array(result);
             const workbook = XLSX.read(data, { type: "array" });
-
-            // Get the first worksheet
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
-
-            // Convert to JSON
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
 
-            // Map the Excel columns to delegate properties
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const parsedDelegates: Delegate[] = jsonData.map((row: any) => ({
-              id: (row["Email address"] || row["Email Address2"] || "")
-                .toString()
-                .trim(),
-              certificateName: (row["Certificate Name"] || "")
-                .toString()
-                .trim(),
-              email: (row["Email address"] || row["Email Address2"] || "")
-                .toString()
-                .trim(),
+              id: (row["Email address"] || row["Email Address2"] || "").toString().trim(),
+              certificateName: (row["Certificate Name"] || "").toString().trim(),
+              email: (row["Email address"] || row["Email Address2"] || "").toString().trim(),
               contactNumber: (row["Contact Number"] || "").toString().trim(),
               confirmedDateTime: (row["Timestamp"] || "").toString().trim(),
             }));
 
             setDelegates(parsedDelegates);
-            console.log("parsedDelegates", parsedDelegates);
-
             setCurrentIndex(0);
-            alert(
-              `Successfully loaded ${parsedDelegates.length} delegates from Excel file`
-            );
           }
         } catch (error) {
           console.error("Error parsing Excel file:", error);
-          alert("Error parsing Excel file. Please check the format.");
         }
       };
       reader.readAsArrayBuffer(file);
     }
   };
 
-  const generateSingleCertificate = async (
-    delegate: Delegate
-  ): Promise<CertificateData> => {
+  const generateSingleCertificate = async (delegate: Delegate): Promise<CertificateData> => {
     return new Promise((resolve) => {
       const canvas = canvasRef.current;
-      if (!canvas) {
-        throw new Error("Canvas not found");
-      }
+      if (!canvas) throw new Error("Canvas not found");
 
       const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        throw new Error("Canvas context not found");
-      }
+      if (!ctx) throw new Error("Canvas context not found");
 
-      // Set canvas size
       canvas.width = certificateConfig.width;
       canvas.height = certificateConfig.height;
-
-      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (backgroundImage) {
-        // Draw background image
         ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
       } else {
-        // Draw default background
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Add border
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = 4;
         ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-
-        // Add default certificate text
         ctx.fillStyle = "#000000";
         ctx.font = "36px serif";
         ctx.textAlign = "center";
         ctx.fillText("Certificate of Participation", canvas.width / 2, 150);
-
         ctx.font = "24px serif";
         ctx.fillText(`${certificateConfig.eventName}`, canvas.width / 2, 200);
-        ctx.fillText(
-          `${certificateConfig.eventDate}`,
-          canvas.width / 2,
-          canvas.height - 100
-        );
+        ctx.fillText(`${certificateConfig.eventDate}`, canvas.width / 2, canvas.height - 100);
       }
 
-      // Draw name with center alignment
       ctx.fillStyle = certificateConfig.textColor;
       ctx.font = `${certificateConfig.fontSize}px ${certificateConfig.fontFamily}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
+      ctx.fillText(delegate.certificateName, certificateConfig.nameX, certificateConfig.nameY);
 
-      const nameText = delegate.certificateName;
-      ctx.fillText(nameText, certificateConfig.nameX, certificateConfig.nameY);
-
-      // Get data URL for Firebase upload
       const dataURL = canvas.toDataURL("image/png");
-
-      resolve({
-        delegate,
-        dataURL,
-        filename: `${delegate.certificateName}_certificate.png`,
-      });
+      resolve({ delegate, dataURL, filename: `${delegate.certificateName}_certificate.png` });
     });
   };
 
-  // Firebase upload function
-  const uploadToFirebase = async (
-    certificateData: CertificateData
-  ): Promise<UploadResult> => {
+  const uploadToFirebase = async (certificateData: CertificateData): Promise<UploadResult> => {
     try {
-      // For demo purposes, we'll simulate the Firebase upload
-      // In real implementation, uncomment and use the actual Firebase code:
-
-      const certificateName = certificateData.delegate.certificateName;
-
-      // Upload image to Firebase Storage
-      // const storageRef: StorageReference = ref(
-      //   storage,
-      //   `${firebaseConfig.folderPath}/${certificateName}-certificate.png`
-      // );
-
-      // await uploadString(storageRef, certificateData.dataURL, "data_url");
-
-      // Get the public URL of the uploaded image
-      // const downloadURL = await getDownloadURL(storageRef);
-
-      // const delegatesRef = collection(db, "delegates");
-      // const q = query(
-      //   delegatesRef,
-      //   where("email", "==", certificateData.delegate.email)
-      // );
-      // const querySnapshot = await getDocs(q);
-
-      // if (!querySnapshot.empty) {
-      //   // Update all matching documents (should be only one)
-      //   for (const docSnap of querySnapshot.docs) {
-      //     await updateDoc(docSnap.ref, {
-      //       certificateURL: downloadURL,
-      //     });
-      //   }
-      // } else {
-      //   console.warn(
-      //     "No delegate found with email:",
-      //     certificateData.delegate.email
-      //   );
-      // }
-
-      // Simulated Firebase upload for demo
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1000 + Math.random() * 1000)
-      );
-
+      await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 1000));
       return {
         success: true,
-        url: `https://firebasestorage.googleapis.com/v0/b/your-project.appspot.com/o/${
-          firebaseConfig.folderPath
-        }%2F${encodeURIComponent(certificateName)}-certificate.png?alt=media`,
+        url: `https://firebasestorage.googleapis.com/v0/b/your-project.appspot.com/o/${firebaseConfig.folderPath}%2F${encodeURIComponent(certificateData.delegate.certificateName)}-certificate.png?alt=media`,
         filename: certificateData.filename,
         delegate: certificateData.delegate,
         uploadedAt: new Date().toISOString(),
       };
     } catch (error) {
-      console.error("Error uploading to Firebase:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -335,51 +224,24 @@ const CertificateGenerator: React.FC = () => {
     setIsGenerating(true);
     setUploadProgress(0);
     const uploaded: UploadResult[] = [];
-    const failed: UploadResult[] = [];
 
     for (let i = 0; i < delegates.length; i++) {
       setCurrentIndex(i);
       setUploadProgress(Math.round((i / delegates.length) * 100));
 
       try {
-        // Generate certificate
         const certificateData = await generateSingleCertificate(delegates[i]);
-
-        // Upload to Firebase
         const uploadResult = await uploadToFirebase(certificateData);
-
-        if (uploadResult.success) {
-          uploaded.push(uploadResult);
-        } else {
-          failed.push(uploadResult);
-        }
-
-        // Small delay to prevent overwhelming Firebase
+        if (uploadResult.success) uploaded.push(uploadResult);
         await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error) {
-        failed.push({
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-          delegate: delegates[i],
-          filename: `${delegates[i].certificateName}_certificate.png`,
-        });
+        console.error("Error:", error);
       }
     }
 
     setUploadProgress(100);
     setUploadedCertificates(uploaded);
     setIsGenerating(false);
-
-    if (failed.length > 0) {
-      alert(
-        `Upload completed with ${uploaded.length} successes and ${failed.length} failures. Check console for details.`
-      );
-      console.error("Failed uploads:", failed);
-    } else {
-      alert(
-        `Successfully uploaded ${uploaded.length} certificates to Firebase Storage!`
-      );
-    }
   };
 
   const generatePreview = async (): Promise<void> => {
@@ -410,318 +272,312 @@ const CertificateGenerator: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleConfigChange = (
-    field: keyof CertificateConfig,
-    value: string | number
-  ): void => {
-    setCertificateConfig((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleConfigChange = (field: keyof CertificateConfig, value: string | number): void => {
+    setCertificateConfig((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleFirebaseConfigChange = (
-    field: keyof FirebaseConfig,
-    value: string | boolean
-  ): void => {
-    setFirebaseConfig((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleFirebaseConfigChange = (field: keyof FirebaseConfig, value: string | boolean): void => {
+    setFirebaseConfig((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-gray-900 min-h-screen text-gray-100">
-      <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-        <h1 className="text-3xl font-bold text-gray-100 mb-6">
-          <Cloud className="w-8 h-8 inline mr-3 text-blue-400" />
-          Firebase Certificate Generator
-        </h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-white">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-pink-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+      </div>
 
-        {/* Upload Section */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-100">
-              Upload Files
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Certificate Background Image
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleBackgroundUpload}
-                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-900 file:text-blue-300 hover:file:bg-blue-800 bg-gray-700 border-gray-600"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Delegates Excel File (.xlsx)
-                </label>
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleDelegatesUpload}
-                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-900 file:text-green-300 hover:file:bg-green-800 bg-gray-700 border-gray-600"
-                />
-              </div>
-            </div>
+      <div className="relative z-10 max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mb-6 shadow-2xl animate-pulse">
+            <Sparkles className="w-10 h-10 text-white" />
           </div>
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
+            Certificate Generator
+          </h1>
+          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+            Create and upload beautiful certificates with Firebase integration
+          </p>
+        </div>
 
-          {/* Configuration */}
-          <div className="space-y-4 text-gray-200">
-            <h3 className="text-lg font-semibold">Certificate Configuration</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-300">
-                  Name Center X
-                </label>
-                <input
-                  type="number"
-                  value={certificateConfig.nameX}
-                  onChange={(e) =>
-                    handleConfigChange("nameX", parseInt(e.target.value) || 0)
-                  }
-                  className="w-full px-2 py-1 border border-gray-600 rounded text-sm bg-gray-700 text-gray-100"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-300">
-                  Name Center Y
-                </label>
-                <input
-                  type="number"
-                  value={certificateConfig.nameY}
-                  onChange={(e) =>
-                    handleConfigChange("nameY", parseInt(e.target.value) || 0)
-                  }
-                  className="w-full px-2 py-1 border border-gray-600 rounded text-sm bg-gray-700 text-gray-100"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-300">
-                  Font Size
-                </label>
-                <input
-                  type="number"
-                  value={certificateConfig.fontSize}
-                  onChange={(e) =>
-                    handleConfigChange(
-                      "fontSize",
-                      parseInt(e.target.value) || 0
-                    )
-                  }
-                  className="w-full px-2 py-1 border border-gray-600 rounded text-sm bg-gray-700 text-gray-100"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-300">
-                  Text Color
-                </label>
-                <input
-                  type="color"
-                  value={certificateConfig.textColor}
-                  onChange={(e) =>
-                    handleConfigChange("textColor", e.target.value)
-                  }
-                  className="w-full h-8 border border-gray-600 rounded bg-gray-700"
-                />
+        {/* Main Content */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Upload Section */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl">
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
+                <Upload className="w-6 h-6 mr-3 text-blue-400" />
+                Upload Files
+              </h3>
+              
+              <div className="space-y-6">
+                {/* Background Upload */}
+                <div className="group">
+                  <label className="block text-sm font-semibold text-slate-300 mb-3">
+                    Certificate Background
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBackgroundUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="border-2 border-dashed border-slate-600 group-hover:border-blue-400 rounded-xl p-8 text-center transition-all duration-300 hover:bg-slate-800/50">
+                      <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <FileText className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <p className="text-slate-400 group-hover:text-blue-400 transition-colors">
+                        Drop image here or click to browse
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Delegates Upload */}
+                <div className="group">
+                  <label className="block text-sm font-semibold text-slate-300 mb-3">
+                    Delegates Excel File
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={handleDelegatesUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="border-2 border-dashed border-slate-600 group-hover:border-green-400 rounded-xl p-8 text-center transition-all duration-300 hover:bg-slate-800/50">
+                      <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <FileText className="w-6 h-6 text-green-400" />
+                      </div>
+                      <p className="text-slate-400 group-hover:text-green-400 transition-colors">
+                        Drop Excel file here or click to browse
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Firebase Configuration */}
-            <div className="mt-4 p-3 bg-blue-900 rounded">
-              <h4 className="font-medium text-blue-200 mb-2">
-                Firebase Settings
-              </h4>
-              <div className="space-y-2">
-                <div>
-                  <label className="block text-xs font-medium text-blue-300">
-                    Storage Folder
-                  </label>
-                  <input
-                    type="text"
-                    value={firebaseConfig.folderPath}
-                    onChange={(e) =>
-                      handleFirebaseConfigChange("folderPath", e.target.value)
-                    }
-                    className="w-full px-2 py-1 border border-blue-800 rounded text-sm bg-gray-700 text-gray-100"
-                    placeholder="certificates"
-                  />
+            {/* Configuration */}
+            <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl">
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
+                <Settings className="w-6 h-6 mr-3 text-purple-400" />
+                Configuration
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Name X</label>
+                    <input
+                      type="number"
+                      value={certificateConfig.nameX}
+                      onChange={(e) => handleConfigChange("nameX", parseInt(e.target.value) || 0)}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Name Y</label>
+                    <input
+                      type="number"
+                      value={certificateConfig.nameY}
+                      onChange={(e) => handleConfigChange("nameY", parseInt(e.target.value) || 0)}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Font Size</label>
+                    <input
+                      type="number"
+                      value={certificateConfig.fontSize}
+                      onChange={(e) => handleConfigChange("fontSize", parseInt(e.target.value) || 0)}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Text Color</label>
+                    <input
+                      type="color"
+                      value={certificateConfig.textColor}
+                      onChange={(e) => handleConfigChange("textColor", e.target.value)}
+                      className="w-full h-12 bg-slate-800 border border-slate-700 rounded-xl cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Firebase Config */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
+                  <h4 className="font-semibold text-blue-300 mb-3 flex items-center">
+                    <Cloud className="w-4 h-4 mr-2" />
+                    Firebase Settings
+                  </h4>
+                  <div>
+                    <label className="block text-sm font-medium text-blue-200 mb-2">Storage Folder</label>
+                    <input
+                      type="text"
+                      value={firebaseConfig.folderPath}
+                      onChange={(e) => handleFirebaseConfigChange("folderPath", e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all outline-none"
+                      placeholder="certificates"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Status */}
-        <div className="bg-blue-900 text-blue-200 p-4 rounded-lg mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="font-semibold">
-                Status: {delegates.length} delegates loaded
-              </p>
-              {isGenerating && (
-                <div className="mt-2">
-                  <p className="text-sm text-blue-300">
-                    Uploading certificate {currentIndex + 1} of{" "}
-                    {delegates.length}...
+          {/* Preview and Status */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Status Card */}
+            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-6 shadow-2xl">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-white mb-2 flex items-center">
+                    <Zap className="w-6 h-6 mr-3 text-yellow-400" />
+                    Status
+                  </h3>
+                  <p className="text-slate-300">
+                    {delegates.length} delegates loaded
                   </p>
-                  <div className="w-full bg-blue-800 rounded-full h-2 mt-1">
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={generatePreview}
+                    disabled={isGenerating}
+                    className="px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-xl transition-all duration-300 flex items-center gap-2 border border-slate-700 hover:border-blue-400"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Preview
+                  </button>
+                  <button
+                    onClick={generateAndUploadAll}
+                    disabled={isGenerating}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-blue-500/25"
+                  >
+                    {isGenerating ? <Pause className="w-4 h-4" /> : <Cloud className="w-4 h-4" />}
+                    {isGenerating ? "Processing..." : "Upload All"}
+                  </button>
+                </div>
+              </div>
+
+              {isGenerating && (
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-300">
+                      Processing certificate {currentIndex + 1} of {delegates.length}
+                    </span>
+                    <span className="text-blue-400 font-semibold">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
                     <div
-                      className="bg-blue-400 h-2 rounded-full transition-all duration-300"
+                      className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
                       style={{ width: `${uploadProgress}%` }}
                     ></div>
                   </div>
-                  <p className="text-xs text-blue-400 mt-1">
-                    {uploadProgress}% Complete
-                  </p>
                 </div>
               )}
             </div>
-            <div className="space-x-2">
-              <button
-                onClick={generatePreview}
-                disabled={isGenerating}
-                className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-              >
-                <Settings className="w-4 h-4 inline mr-2" />
-                Preview
-              </button>
-              <button
-                onClick={generateAndUploadAll}
-                disabled={isGenerating}
-                className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-600 disabled:opacity-50"
-              >
-                {isGenerating ? (
-                  <Pause className="w-4 h-4 inline mr-2" />
-                ) : (
-                  <Cloud className="w-4 h-4 inline mr-2" />
-                )}
-                Upload All to Firebase
-              </button>
+
+            {/* Upload Results */}
+            {uploadedCertificates.length > 0 && (
+              <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-xl border border-green-500/20 rounded-2xl p-6 shadow-2xl">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-white flex items-center">
+                    <Check className="w-6 h-6 mr-3 text-green-400" />
+                    Upload Complete
+                  </h3>
+                  <button
+                    onClick={downloadCertificatesList}
+                    className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-green-500/25"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Download List
+                  </button>
+                </div>
+                
+                <div className="bg-slate-900/50 rounded-xl p-4 max-h-64 overflow-y-auto">
+                  <div className="grid gap-3">
+                    {uploadedCertificates.map((cert, index) => (
+                      <div key={index} className="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                        <div>
+                          <p className="font-semibold text-white">{cert.delegate.certificateName}</p>
+                          <p className="text-sm text-slate-400">{cert.delegate.email}</p>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-green-400" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Preview */}
+            <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl">
+              <h3 className="text-2xl font-bold text-white mb-6 text-center">Certificate Preview</h3>
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 border border-slate-700">
+                <canvas
+                  ref={canvasRef}
+                  width={certificateConfig.width}
+                  height={certificateConfig.height}
+                  className="max-w-full h-auto rounded-lg shadow-2xl mx-auto block"
+                  style={{ maxWidth: "100%", height: "auto" }}
+                />
+                <p className="text-center text-slate-400 mt-4">
+                  Current: {delegates[currentIndex]?.certificateName || "Sample Certificate"}
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Upload Results */}
-        {uploadedCertificates.length > 0 && (
-          <div className="bg-green-900 p-4 rounded-lg mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <p className="font-semibold text-green-200">
-                {uploadedCertificates.length} certificates uploaded successfully
-                to Firebase Storage!
-              </p>
-              <button
-                onClick={downloadCertificatesList}
-                className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-600 text-sm"
-              >
-                <ExternalLink className="w-4 h-4 inline mr-2" />
-                Download URLs List
-              </button>
+        {/* Instructions */}
+        <div className="mt-12 bg-slate-900/30 backdrop-blur-xl border border-slate-800 rounded-2xl p-8 shadow-2xl">
+          <h3 className="text-2xl font-bold text-white mb-6">Setup Instructions</h3>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mt-1">1</div>
+                <div>
+                  <h4 className="font-semibold text-white">Install Firebase SDK</h4>
+                  <code className="text-sm bg-slate-800 px-3 py-1 rounded text-blue-400 block mt-1">npm install firebase</code>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mt-1">2</div>
+                <div>
+                  <h4 className="font-semibold text-white">Configure Firebase</h4>
+                  <p className="text-slate-400 text-sm mt-1">Create config file and import at the top</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mt-1">3</div>
+                <div>
+                  <h4 className="font-semibold text-white">Enable Upload Code</h4>
+                  <p className="text-slate-400 text-sm mt-1">Uncomment Firebase functions in uploadToFirebase</p>
+                </div>
+              </div>
             </div>
-
-            <div className="max-h-48 overflow-y-auto text-gray-200">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-green-800">
-                    <th className="text-left py-2">Name</th>
-                    <th className="text-left py-2">Email</th>
-                    <th className="text-left py-2">Contact Number</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {uploadedCertificates.map((cert, index) => (
-                    <tr key={index} className="border-b border-green-800">
-                      <td className="py-1">{cert.delegate.certificateName}</td>
-                      <td className="py-1">{cert.delegate.email}</td>
-                      <td className="py-1">{cert.delegate.contactNumber}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold mt-1">4</div>
+                <div>
+                  <h4 className="font-semibold text-white">Upload Files</h4>
+                  <p className="text-slate-400 text-sm mt-1">Add your certificate template and delegates Excel</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold mt-1">5</div>
+                <div>
+                  <h4 className="font-semibold text-white">Configure & Generate</h4>
+                  <p className="text-slate-400 text-sm mt-1">Adjust positioning and upload all certificates</p>
+                </div>
+              </div>
             </div>
           </div>
-        )}
-
-        {/* Preview */}
-        <div className="text-center">
-          <h3 className="text-lg font-semibold mb-4 text-gray-100">
-            Certificate Preview
-          </h3>
-          <div className="border-2 border-gray-700 rounded-lg p-4 bg-gray-800 inline-block">
-            <canvas
-              ref={canvasRef}
-              width={certificateConfig.width}
-              height={certificateConfig.height}
-              className="max-w-full h-auto border border-gray-700 bg-gray-900"
-              style={{
-                maxWidth: "800px",
-                height: "auto",
-              }}
-            />
-          </div>
-          <p className="text-sm text-gray-400 mt-2">
-            Current delegate:{" "}
-            {delegates[currentIndex]?.certificateName || "Sample Certificate"}
-          </p>
-        </div>
-      </div>
-
-      {/* Instructions */}
-      <div className="bg-gray-800 rounded-lg shadow-lg p-6">
-        <h3 className="text-lg font-semibold mb-4 text-gray-100">
-          Firebase Integration Instructions
-        </h3>
-        <ol className="list-decimal list-inside space-y-2 text-sm text-gray-300">
-          <li>
-            Install Firebase SDK:{" "}
-            <code className="bg-gray-900 px-2 py-1 rounded text-gray-200">
-              npm install firebase
-            </code>
-          </li>
-          <li>
-            Create your Firebase config file and import it at the top of this
-            component
-          </li>
-          <li>
-            Uncomment the Firebase import statements and the actual upload code
-            in the{" "}
-            <code className="bg-gray-900 px-2 py-1 rounded text-gray-200">
-              uploadToFirebase
-            </code>{" "}
-            function
-          </li>
-          <li>
-            Upload your certificate background image and delegates Excel file
-          </li>
-          <li>Configure the certificate name position and styling</li>
-          <li>Use &quot;Preview&quot; to test the certificate layout</li>
-          <li>
-            Click &quot;Upload All to Firebase&quot; to generate and upload all
-            certificates
-          </li>
-          <li>Download the CSV file with all Firebase URLs for easy access</li>
-        </ol>
-
-        <div className="mt-4 p-3 bg-yellow-900 rounded">
-          <p className="text-sm text-yellow-200">
-            <strong>Note:</strong> The current implementation includes a
-            simulated Firebase upload for demonstration. To use real Firebase
-            Storage, uncomment the Firebase code in the{" "}
-            <code>uploadToFirebase</code> function and provide your Firebase
-            configuration.
-          </p>
-        </div>
-
-        <div className="mt-3 p-3 bg-blue-900 rounded">
-          <p className="text-sm text-blue-200">
-            <strong>Firebase Setup:</strong> Make sure your Firebase Storage
-            rules allow uploads to the certificates folder, and that you have
-            proper authentication set up in your application.
-          </p>
         </div>
       </div>
     </div>
