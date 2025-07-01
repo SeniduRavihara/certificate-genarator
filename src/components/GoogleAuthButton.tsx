@@ -1,7 +1,5 @@
-import type { User } from "firebase/auth";
-import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
-import React, { useEffect, useState } from "react";
-import { auth, provider } from "../firebase/config";
+import React from "react";
+import { useAuth } from "../hooks/useAuth";
 
 interface GoogleAuthButtonProps {
   className?: string;
@@ -12,29 +10,7 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   className = "",
   size = 40,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch {
-      // Optionally handle error
-      alert("Google login failed");
-    }
-  };
-
-  const handleLogout = async () => {
-    await signOut(auth);
-  };
+  const { user, loading, signInWithGoogleDrive, signOutGoogle } = useAuth();
 
   if (loading) {
     return (
@@ -56,14 +32,14 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
           alt={user.displayName || "Google User"}
           className="rounded-full border-2 border-blue-500 shadow-lg w-full h-full object-cover cursor-pointer"
           title={user.displayName || undefined}
-          onClick={handleLogout}
+          onClick={signOutGoogle}
         />
         <div className="absolute right-0 top-full mt-2 hidden group-hover:flex flex-col bg-slate-900 border border-slate-700 rounded-lg shadow-lg p-2 z-50 min-w-[120px]">
           <span className="text-xs text-slate-300 px-2 py-1">
             {user.displayName}
           </span>
           <button
-            onClick={handleLogout}
+            onClick={signOutGoogle}
             className="text-red-400 hover:text-red-300 text-xs px-2 py-1 text-left"
           >
             Sign out
@@ -75,7 +51,7 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 
   return (
     <button
-      onClick={handleLogin}
+      onClick={signInWithGoogleDrive}
       className={`flex items-center gap-2 px-4 py-2 bg-white text-slate-900 rounded-full shadow hover:bg-blue-100 font-semibold transition ${className}`}
       style={{ height: size }}
     >

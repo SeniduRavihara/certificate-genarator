@@ -16,9 +16,8 @@ const firebaseConfig = {
   projectId: "certificate-genarator-49c05",
   storageBucket: "certificate-genarator-49c05.firebasestorage.app",
   messagingSenderId: "88491960416",
-  appId: "1:88491960416:web:145328b9bac9db15563b05"
+  appId: "1:88491960416:web:145328b9bac9db15563b05",
 };
-
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -26,4 +25,9 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const auth = getAuth(app);
-export const provider = new GoogleAuthProvider();
+export const getGoogleDriveProvider = () => {
+  const provider = new GoogleAuthProvider();
+  provider.addScope("https://www.googleapis.com/auth/drive.file");
+  provider.addScope("https://www.googleapis.com/auth/drive.metadata.readonly");
+  return provider;
+};
