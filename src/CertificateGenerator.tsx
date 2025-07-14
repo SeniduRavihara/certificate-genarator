@@ -6,7 +6,6 @@ import * as XLSX from "xlsx";
 import AnimatedBackground from "./components/AnimatedBackground";
 import ConfigSection from "./components/ConfigSection";
 import HeaderSection from "./components/HeaderSection";
-import InstructionsSection from "./components/InstructionsSection";
 import PreviewSection from "./components/PreviewSection";
 import StatusSection from "./components/StatusSection";
 import UploadResults from "./components/UploadResults";
@@ -22,7 +21,7 @@ interface Delegate {
   confirmedDateTime: string;
 }
 
-interface CertificateConfig {
+export interface CertificateConfig {
   width: number;
   height: number;
   nameX: number;
@@ -35,7 +34,7 @@ interface CertificateConfig {
   eventDate: string;
 }
 
-interface FirebaseConfig {
+export interface FirebaseConfig {
   enabled: boolean;
   folderPath: string;
   generatePublicLinks: boolean;
@@ -47,7 +46,7 @@ interface CertificateData {
   filename: string;
 }
 
-interface UploadResult {
+export interface UploadResult {
   success: boolean;
   url?: string;
   filename: string;
@@ -450,7 +449,7 @@ const CertificateGenerator: React.FC = () => {
             />
           </div>
         </div>
-        <InstructionsSection />
+        {/* <InstructionsSection /> */}
       </div>
     </div>
   );
